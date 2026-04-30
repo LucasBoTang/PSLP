@@ -63,11 +63,14 @@ should now be represented using the IEEE-754 encoding. (For example, in C, use `
 
 ---
 ## Citation
-A paper is under preparation. If you wish to cite this software, you may use the following bibtex. 
+If you find this repository useful, please consider giving it a star. If you wish to cite this work, you may use the following bibtex. 
 ```bibtex
-@software{Cederberg2025,
-  author = {Cederberg, Daniel and Boyd, Stephen},
-  title = {PSLP — A Lightweight C Presolver for Linear Programs},
-  year = {2025},
-  url = {https://github.com/dance858/PSLP},
+@misc{Cederber26
+  title = {{Presolving for {GPU}-Accelerated First-Order LP Solvers}},
+  author = {Daniel Cederberg and Stephen Boyd},
+  year = {2026},
+  eprint = {2604.23951},
+  archivePrefix = {arXiv},
+  primaryClass = {math.OC},
+  note = {arXiv:2604.23951}
 }
