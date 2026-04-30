@@ -65,7 +65,7 @@ should now be represented using the IEEE-754 encoding. (For example, in C, use `
 ## Citation
 If you find this repository useful, please consider giving it a star. If you wish to cite this work, you may use the following bibtex. 
 ```bibtex
-@misc{Cederber26
+@misc{Cederberg26
   title = {{Presolving for {GPU}-Accelerated First-Order LP Solvers}},
   author = {Daniel Cederberg and Stephen Boyd},
   year = {2026},
