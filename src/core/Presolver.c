@@ -822,8 +822,7 @@ void postsolve_primal_infeas_ray(Presolver *presolver, const double *y,
     }
 }
 
-void postsolve_dual_infeas_ray(Presolver *presolver, const double *x,
-                               double *x_orig)
+void postsolve_dual_infeas_ray(Presolver *presolver, const double *x, double *x_orig)
 {
     Timer timer;
     Solution *sol = presolver->sol;

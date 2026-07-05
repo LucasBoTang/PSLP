@@ -1,9 +1,9 @@
 #ifndef TEST_RAY_POSTSOLVE_H
 #define TEST_RAY_POSTSOLVE_H
 
-#include "Postsolver.h"
 #include "Numerics.h"
 #include "PSLP_API.h"
+#include "Postsolver.h"
 #include "minunit.h"
 
 static int counter_ray_postsolve = 0;
@@ -212,8 +212,8 @@ static char *test_0_primal_ray_postsolve()
     mu_assert("primal ray postsolve y0", IS_EQUAL_FEAS_TOL(y_orig[0], y[0]));
     mu_assert("primal ray postsolve y1", IS_EQUAL_FEAS_TOL(y_orig[1], y[1]));
     mu_assert("primal ray postsolve z",
-              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z,
-                                      n_rows, n_cols));
+              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z, n_rows,
+                                      n_cols));
 
     free_settings(stgs);
     free_presolver(presolver);
@@ -288,8 +288,8 @@ static char *test_singleton_eq_primal_ray_postsolve()
     mu_assert("singleton eq primal ray postsolve error",
               is_ray_correct(y_orig, correct_y, n_rows));
     mu_assert("singleton eq primal ray z",
-              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z,
-                                      n_rows, n_cols));
+              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z, n_rows,
+                                      n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);
@@ -329,8 +329,8 @@ static char *test_dton_primal_ray_postsolve()
     mu_assert("dton primal ray postsolve error",
               is_ray_correct(y_orig, correct_y, n_rows));
     mu_assert("dton primal ray z",
-              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z,
-                                      n_rows, n_cols));
+              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z, n_rows,
+                                      n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);
@@ -370,8 +370,8 @@ static char *test_bound_change_primal_ray_postsolve()
     mu_assert("bound change primal ray postsolve error",
               is_ray_correct(y_orig, correct_y, n_rows));
     mu_assert("bound change primal ray z",
-              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z,
-                                      n_rows, n_cols));
+              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z, n_rows,
+                                      n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);
@@ -411,8 +411,8 @@ static char *test_fix_col_inf_primal_ray_postsolve()
     mu_assert("fix col inf primal ray postsolve error",
               is_ray_correct(y_orig, correct_y, n_rows));
     mu_assert("fix col inf primal ray z",
-              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z,
-                                      n_rows, n_cols));
+              is_primal_ray_z_correct(Ax, Ai, Ap, y_orig, presolver->sol->z, n_rows,
+                                      n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);
@@ -569,8 +569,8 @@ static char *test_parallel_col_primal_ray_postsolve()
 {
     PostsolveInfo *info = postsolve_info_new(0, 2);
 
-    save_retrieval_parallel_col(info, INF, -INF, -INF, INF, 2.0, 0, 1,
-                                C_TAG_NONE, C_TAG_NONE);
+    save_retrieval_parallel_col(info, INF, -INF, -INF, INF, 2.0, 0, 1, C_TAG_NONE,
+                                C_TAG_NONE);
 
     int col_map[] = {0, -1};
     postsolver_update(info, 1, 0, col_map, NULL);
@@ -593,8 +593,8 @@ static char *test_parallel_col_dual_ray_postsolve()
 {
     PostsolveInfo *info = postsolve_info_new(0, 2);
 
-    save_retrieval_parallel_col(info, 1.0, 0.0, -INF, INF, 2.0, 0, 1,
-                                C_TAG_UB_INF, C_TAG_LB_INF | C_TAG_UB_INF);
+    save_retrieval_parallel_col(info, 1.0, 0.0, -INF, INF, 2.0, 0, 1, C_TAG_UB_INF,
+                                C_TAG_LB_INF | C_TAG_UB_INF);
 
     int col_map[] = {0, -1};
     postsolver_update(info, 1, 0, col_map, NULL);
@@ -717,7 +717,8 @@ static char *test_rhs_change_primal_ray_postsolve_inactive()
 
     postsolver_run_primal_infeas_ray(info, &sol, y, z);
 
-    mu_assert("rhs change inactive primal ray y0", IS_EQUAL_FEAS_TOL(sol.y[0], -2.0));
+    mu_assert("rhs change inactive primal ray y0",
+              IS_EQUAL_FEAS_TOL(sol.y[0], -2.0));
     mu_assert("rhs change inactive primal ray y1", IS_EQUAL_FEAS_TOL(sol.y[1], 0.0));
 
     postsolve_info_free(info);
@@ -755,8 +756,8 @@ static char *test_infeasible_rhs_change_primal_ray_postsolve()
     postsolve_primal_infeas_ray(presolver, y, y_orig);
 
     mu_assert("infeasible rhs change primal ray certificate",
-              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs,
-                                               y_orig, n_rows, n_cols));
+              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs, y_orig,
+                                              n_rows, n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);
@@ -794,8 +795,8 @@ static char *test_infeasible_lhs_change_primal_ray_postsolve()
     postsolve_primal_infeas_ray(presolver, y, y_orig);
 
     mu_assert("infeasible lhs change primal ray certificate",
-              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs,
-                                               y_orig, n_rows, n_cols));
+              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs, y_orig,
+                                              n_rows, n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);
@@ -832,8 +833,8 @@ static char *test_infeasible_bound_change_primal_ray_postsolve()
     postsolve_primal_infeas_ray(presolver, y, y_orig);
 
     mu_assert("infeasible bound change primal ray certificate",
-              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs,
-                                               y_orig, n_rows, n_cols));
+              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs, y_orig,
+                                              n_rows, n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);
@@ -870,8 +871,8 @@ static char *test_infeasible_parallel_col_primal_ray_postsolve()
     postsolve_primal_infeas_ray(presolver, y, y_orig);
 
     mu_assert("infeasible parallel col primal ray certificate",
-              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs,
-                                               y_orig, n_rows, n_cols));
+              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs, y_orig,
+                                              n_rows, n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);
@@ -907,8 +908,8 @@ static char *test_infeasible_fix_col_inf_primal_ray_postsolve()
     postsolve_primal_infeas_ray(presolver, y, y_orig);
 
     mu_assert("infeasible fix col inf primal ray certificate",
-              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs,
-                                               y_orig, n_rows, n_cols));
+              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs, y_orig,
+                                              n_rows, n_cols));
 
     PS_FREE(stgs);
     free_presolver(presolver);

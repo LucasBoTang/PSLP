@@ -1090,10 +1090,9 @@ void postsolver_run_primal_infeas_ray(const PostsolveInfo *info, Solution *sol,
 
                 if (type == FIXED_COL)
                 {
-                    retrieve_fix_col_primal_ray(sol, indices[start],
-                                                vals + start + 2,
-                                                indices + start + 2,
-                                                starts[j + 1] - start - 2);
+                    retrieve_fix_col_primal_ray(
+                        sol, indices[start], vals + start + 2, indices + start + 2,
+                        starts[j + 1] - start - 2);
                     assert(reductions[j - 1] == BOUND_CHANGE_NO_ROW);
                 }
                 else
