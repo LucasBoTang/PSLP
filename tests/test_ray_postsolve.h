@@ -378,6 +378,37 @@ static char *test_bound_change_primal_ray_postsolve()
     return 0;
 }
 
+static char *test_bound_change_dual_ray_postsolve()
+{
+    PostsolveInfo *info = postsolve_info_new(1, 2);
+
+    save_retrieval_bound_change_no_row(info, 1, 3.0, 0.0, true);
+
+    int rows[] = {0};
+    double vals[] = {2.0};
+    save_retrieval_fixed_col(info, 1, 3.0, 0.0, vals, rows, 1);
+
+    int cols[] = {0, 1};
+    double row_vals[] = {1.0, 2.0};
+    save_retrieval_bound_change_the_row(info, 0, cols, row_vals, 2, 1);
+
+    int col_map[] = {0, -1};
+    int row_map[] = {0};
+    postsolver_update(info, 1, 1, col_map, row_map);
+
+    double x[] = {4.0};
+    double sol_x[2];
+    Solution sol = {sol_x, NULL, NULL, 2, 0};
+
+    postsolver_run_dual_infeas_ray(info, &sol, x);
+
+    mu_assert("bound change dual ray x0", IS_EQUAL_FEAS_TOL(sol.x[0], 4.0));
+    mu_assert("bound change dual ray x1", IS_EQUAL_FEAS_TOL(sol.x[1], 0.0));
+
+    postsolve_info_free(info);
+    return 0;
+}
+
 static char *test_fix_col_inf_primal_ray_postsolve()
 {
     double Ax[] = {1.0, 1, 1, 2, 2, 1, 1, 1, 2, 1};
@@ -955,6 +986,45 @@ static char *test_unbounded_fix_col_inf_dual_ray_postsolve()
     return 0;
 }
 
+static char *test_unbounded_negated_fix_col_inf_dual_ray_postsolve()
+{
+    double Ax[] = {1, -1, -1, 1, -2, 1};
+    int Ai[] = {0, 1, 0, 1, 0, 2};
+    int Ap[] = {0, 2, 4, 6};
+    int nnz = 6;
+    int n_rows = 3;
+    int n_cols = 3;
+
+    double lhs[] = {-INF, -INF, -INF};
+    double rhs[] = {1, 1, 0};
+    double lbs[] = {0, 0, -INF};
+    double ubs[] = {INF, INF, INF};
+    double c[] = {-1, -1, 0};
+
+    Settings *stgs = default_settings();
+    set_settings_true(stgs);
+    stgs->primal_propagation = false;
+    stgs->parallel_rows = false;
+    stgs->parallel_cols = false;
+    Presolver *presolver =
+        new_presolver(Ax, Ai, Ap, n_rows, n_cols, nnz, lhs, rhs, lbs, ubs, c, stgs);
+
+    run_presolver(presolver);
+
+    // reduced dual infeasibility ray
+    double x[] = {1.0, 1.0};
+    double x_orig[] = {0.0, 0.0, 0.0};
+    postsolve_dual_infeas_ray(presolver, x, x_orig);
+
+    mu_assert("unbounded negated fix col inf dual ray certificate",
+              is_dual_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs, c,
+                                            x_orig, n_rows, n_cols));
+
+    PS_FREE(stgs);
+    free_presolver(presolver);
+    return 0;
+}
+
 static const char *all_tests_ray_postsolve()
 {
     mu_run_test(test_0_primal_ray_postsolve, counter_ray_postsolve);
@@ -962,6 +1032,7 @@ static const char *all_tests_ray_postsolve()
     mu_run_test(test_singleton_eq_primal_ray_postsolve, counter_ray_postsolve);
     mu_run_test(test_dton_primal_ray_postsolve, counter_ray_postsolve);
     mu_run_test(test_bound_change_primal_ray_postsolve, counter_ray_postsolve);
+    mu_run_test(test_bound_change_dual_ray_postsolve, counter_ray_postsolve);
     mu_run_test(test_fix_col_inf_primal_ray_postsolve, counter_ray_postsolve);
     mu_run_test(test_fix_col_inf_dual_ray_postsolve, counter_ray_postsolve);
     mu_run_test(test_fix_col_primal_ray_postsolve, counter_ray_postsolve);
@@ -987,6 +1058,8 @@ static const char *all_tests_ray_postsolve()
     mu_run_test(test_infeasible_fix_col_inf_primal_ray_postsolve,
                 counter_ray_postsolve);
     mu_run_test(test_unbounded_fix_col_inf_dual_ray_postsolve,
+                counter_ray_postsolve);
+    mu_run_test(test_unbounded_negated_fix_col_inf_dual_ray_postsolve,
                 counter_ray_postsolve);
     return NULL;
 }
