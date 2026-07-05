@@ -139,6 +139,12 @@ extern "C"
     void postsolve_primal_infeas_ray(Presolver *presolver, const double *y,
                                      double *y_orig);
 
+    /* Postsolve a dual infeasibility ray x of the reduced problem.
+       The function writes the corresponding ray for the original problem
+       to x_orig. It does not check whether x is a valid ray. */
+    void postsolve_dual_infeas_ray(Presolver *presolver, const double *x,
+                                   double *x_orig);
+
 #ifdef __cplusplus
 }
 #endif

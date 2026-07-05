@@ -791,8 +791,8 @@ void postsolve_primal_infeas_ray(Presolver *presolver, const double *y,
 {
     Timer timer;
     Solution *sol = presolver->sol;
-    State *data = presolver->prob->constraints->state;
     PresolveStats *stats = presolver->stats;
+    State *data = presolver->prob->constraints->state;
     PostsolveInfo *postsolve_info = data->postsolve_info;
     PresolvedProblem *reduced_prob = presolver->reduced_prob;
     size_t len_z = MAX((size_t) 1, stats->n_cols_reduced);
@@ -813,6 +813,33 @@ void postsolve_primal_infeas_ray(Presolver *presolver, const double *y,
         y_orig[i] = sol->y[i];
     }
     PS_FREE(z);
+    clock_gettime(CLOCK_MONOTONIC, &timer.end);
+    stats->time_postsolve = GET_ELAPSED_SECONDS(timer);
+
+    if (presolver->stgs->verbose)
+    {
+        printf("PSLP postsolve time: %.4f seconds\n", stats->time_postsolve);
+    }
+}
+
+void postsolve_dual_infeas_ray(Presolver *presolver, const double *x,
+                               double *x_orig)
+{
+    Timer timer;
+    Solution *sol = presolver->sol;
+    PresolveStats *stats = presolver->stats;
+    State *data = presolver->prob->constraints->state;
+    PostsolveInfo *postsolve_info = data->postsolve_info;
+    assert(presolver->reduced_prob != NULL);
+
+    clock_gettime(CLOCK_MONOTONIC, &timer.start);
+    postsolver_update(postsolve_info, stats->n_cols_reduced, stats->n_rows_reduced,
+                      data->work->mappings->cols, data->work->mappings->rows);
+    postsolver_run_dual_infeas_ray(postsolve_info, sol, x);
+    for (int i = 0; i < sol->dim_x; ++i)
+    {
+        x_orig[i] = sol->x[i];
+    }
     clock_gettime(CLOCK_MONOTONIC, &timer.end);
     stats->time_postsolve = GET_ELAPSED_SECONDS(timer);
 

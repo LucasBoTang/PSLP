@@ -84,6 +84,8 @@ void postsolver_run(const PostsolveInfo *info, Solution *sol, const double *x,
                     const double *y, const double *z);
 void postsolver_run_primal_infeas_ray(const PostsolveInfo *info, Solution *sol,
                                       const double *y, const double *z);
+void postsolver_run_dual_infeas_ray(const PostsolveInfo *info, Solution *sol,
+                                    const double *x);
 
 /* Saves the information required to retrieve variable xk that was fixed
    to val. To recover the dual variable we need zk = ck - ak^T y
