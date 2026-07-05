@@ -510,6 +510,171 @@ void polish_z(Solution *sol, const double *lbs, const double *ubs)
     }
 }
 
+static inline void copy_reduced_primal_ray_to_orginal(Solution *sol, const double *y,
+                                                      const double *z,
+                                                      const int *col_map,
+                                                      const int *row_map)
+{
+    size_t dim_x = sol->dim_x;
+    for (size_t i = 0; i < dim_x; ++i)
+    {
+        if (col_map[i] == -1)
+        {
+            sol->z[i] = COL_NOT_RETRIEVED;
+            continue;
+        }
+
+        sol->z[i] = z[col_map[i]];
+    }
+
+    size_t dim_y = sol->dim_y;
+    for (size_t i = 0; i < dim_y; ++i)
+    {
+        if (row_map[i] == -1)
+        {
+            sol->y[i] = ROW_NOT_RETRIEVED;
+            continue;
+        }
+
+        sol->y[i] = y[row_map[i]];
+    }
+}
+
+static void retrieve_fix_col_primal_ray(Solution *sol, int col,
+                                        const double *ak_vals, const int *ak_rows,
+                                        int len)
+{
+    assert(sol->z[col] == COL_NOT_RETRIEVED);
+
+    sol->z[col] = 0.0;
+    for (int i = 0; i < len; ++i)
+    {
+        assert(sol->y[ak_rows[i]] != ROW_NOT_RETRIEVED);
+        sol->z[col] -= ak_vals[i] * sol->y[ak_rows[i]];
+    }
+}
+
+static void retrieve_sub_col_primal_ray(Solution *sol, int k, const int *cols,
+                                        const double *vals, int len, int i)
+{
+    assert(sol->y[i] != ROW_NOT_RETRIEVED);
+    assert(sol->z[k] == COL_NOT_RETRIEVED);
+
+    double aik = 0.0;
+    for (int ii = 0; ii < len; ++ii)
+    {
+        if (cols[ii] == k)
+        {
+            aik = vals[ii];
+            break;
+        }
+    }
+
+    sol->z[k] = -aik * sol->y[i];
+}
+
+static void retrieve_fix_col_inf_primal_ray(Solution *sol, const int *indices)
+{
+    int col = indices[1];
+    assert(sol->z[col] == COL_NOT_RETRIEVED);
+    sol->z[col] = 0.0;
+}
+
+static void retrieve_parallel_col_primal_ray(Solution *sol, const int *indices,
+                                             const double *vals)
+{
+    int j = indices[0];
+    int k = indices[1];
+    double ratio = vals[4];
+    assert(indices[4] == DUMMY_VALUE);
+    assert(sol->z[j] != COL_NOT_RETRIEVED && sol->z[k] == COL_NOT_RETRIEVED);
+
+    sol->z[k] = ratio * sol->z[j];
+}
+
+void retrieve_bound_change_primal_ray(Solution *sol, int i, int j, const int *cols,
+                                      const double *vals, int len,
+                                      int is_original_other_bound_lower_bound)
+{
+    int k, ii;
+    double aij = 1.0;
+    bool implied_bound_is_upper = is_original_other_bound_lower_bound;
+    assert(sol->y[i] != ROW_NOT_RETRIEVED);
+    assert(sol->z[j] != COL_NOT_RETRIEVED);
+
+    // If the ray does not use the implied bound, we do not have to retrieve
+    // anything from the row that implied it.
+    if ((implied_bound_is_upper && sol->z[j] >= 0.0) ||
+        (!implied_bound_is_upper && sol->z[j] <= 0.0))
+    {
+        return;
+    }
+
+    // find aij
+    for (ii = 0; ii < len; ++ii)
+    {
+        if (cols[ii] == j)
+        {
+            aij = vals[ii];
+            break;
+        }
+    }
+    assert(ii != len && aij != 0.0);
+
+    // update yi for row i that was used in the bound change
+    sol->y[i] += sol->z[j] / aij;
+
+    // update zk for all variables k appearing in row i
+    for (ii = 0; ii < len; ++ii)
+    {
+        k = cols[ii];
+        if (k == j)
+        {
+            continue;
+        }
+
+        // for now we cheat for dual postsolve of primal propagation fixing variables
+        if (sol->z[k] == COL_NOT_RETRIEVED)
+        {
+            continue;
+        }
+
+        sol->z[k] -= (vals[ii] / aij) * sol->z[j];
+    }
+
+    sol->z[j] = 0.0;
+}
+
+void retrieve_lhs_change_primal_ray(Solution *sol, int i, int j, double ratio)
+{
+    assert(sol->y[i] != ROW_NOT_RETRIEVED);
+    assert(sol->y[j] == ROW_NOT_RETRIEVED || sol->y[j] == 0.0);
+
+    if (sol->y[i] <= 0.0)
+    {
+        sol->y[j] = 0.0;
+        return;
+    }
+
+    sol->y[j] = ratio * sol->y[i];
+    sol->y[i] = 0.0;
+}
+
+void retrieve_rhs_change_primal_ray(Solution *sol, int i, int j, double ratio)
+{
+    assert(sol->y[i] != ROW_NOT_RETRIEVED);
+    assert(sol->y[j] == ROW_NOT_RETRIEVED || sol->y[j] == 0.0);
+
+    if (sol->y[i] >= 0.0)
+    {
+        sol->y[j] = 0.0;
+        return;
+    }
+
+    sol->y[j] = ratio * sol->y[i];
+    sol->y[i] = 0.0;
+}
+
 void postsolver_run(const PostsolveInfo *info, Solution *sol, const double *x,
                     const double *y, const double *z)
 {
@@ -653,6 +818,155 @@ void postsolver_run(const PostsolveInfo *info, Solution *sol, const double *x,
         }
 
         assert(sol->x[i] != COL_NOT_RETRIEVED);
+        assert(sol->z[i] != COL_NOT_RETRIEVED);
+    }
+
+    for (int i = 0; i < sol->dim_y; ++i)
+    {
+        assert(sol->y[i] != ROW_NOT_RETRIEVED);
+    }
+#endif
+}
+
+void postsolver_run_primal_infeas_ray(const PostsolveInfo *info, Solution *sol,
+                                      const double *y, const double *z)
+{
+    const int *col_map = info->col_map;
+    const int *row_map = info->row_map;
+    int n_reductions = (int) info->type->len;
+    ReductionType *reductions = info->type->data;
+    const int *indices = info->indices->data;
+    const double *vals = info->vals->data;
+    const int *starts = info->starts->data;
+    assert(n_reductions == info->starts->len - 1);
+
+    ReductionType type;
+    int start, len;
+
+    copy_reduced_primal_ray_to_orginal(sol, y, z, col_map, row_map);
+
+    for (int i = n_reductions - 1; i >= 0; --i)
+    {
+        type = reductions[i];
+        start = starts[i];
+
+        if (type == FIXED_COL)
+        {
+            len = starts[i + 1] - start - 2;
+            // we might have fixed an empty column so len can be 0
+            assert(len >= 0);
+            retrieve_fix_col_primal_ray(sol, indices[start], vals + start + 2,
+                                        indices + start + 2, len);
+        }
+        else if (type == SUB_COL)
+        {
+            len = starts[i + 1] - start - 2;
+            assert(len > 1);
+            retrieve_sub_col_primal_ray(sol, indices[start], indices + start + 1,
+                                        vals + start + 1, len,
+                                        indices[start + len + 1]);
+        }
+        else if (type == FIXED_COL_INF)
+        {
+            retrieve_fix_col_inf_primal_ray(sol, indices + start);
+        }
+        else if (type == PARALLEL_COL)
+        {
+            assert(starts[i + 1] - start == 5);
+            retrieve_parallel_col_primal_ray(sol, indices + start, vals + start);
+        }
+        else if (type == DELETED_ROW)
+        {
+            assert(starts[i + 1] - start == 1);
+            retrieve_deleted_row(sol, indices[start], 0.0);
+        }
+        else if (type == ADDED_ROW)
+        {
+            assert(starts[i + 1] - start == 2);
+            retrieve_added_row(sol, indices + start, vals + start);
+        }
+        else if (type == ADDED_ROWS)
+        {
+            len = starts[i + 1] - start - 1;
+            assert(len >= 1);
+            retrieve_added_rows(sol, indices[start], indices + start + 1,
+                                vals + start + 1, len, vals[start]);
+        }
+        else if (type == BOUND_CHANGE_THE_ROW)
+        {
+            // get the row that was used to derive the bound changes
+            len = starts[i + 1] - start - 1;
+            assert(len > 0);
+            int num_of_bound_changes = (int) vals[start];
+            int row = indices[start];
+            const int *row_cols = indices + start + 1;
+            const double *row_vals = vals + start + 1;
+            int bound_changes_processed = 0;
+            int j = i - 1;
+
+            while (bound_changes_processed < num_of_bound_changes)
+            {
+                type = reductions[j];
+                start = starts[j];
+                assert(type == BOUND_CHANGE_NO_ROW || type == FIXED_COL);
+
+                if (type == FIXED_COL)
+                {
+                    retrieve_fix_col_primal_ray(sol, indices[start],
+                                                vals + start + 2,
+                                                indices + start + 2,
+                                                starts[j + 1] - start - 2);
+                    assert(reductions[j - 1] == BOUND_CHANGE_NO_ROW);
+                }
+                else
+                {
+                    bound_changes_processed += 1;
+                    retrieve_bound_change_primal_ray(sol, row, indices[start],
+                                                     row_cols, row_vals, len,
+                                                     indices[start + 1]);
+                }
+
+                j -= 1;
+            }
+
+            i = j + 1;
+            assert(i >= 0);
+            assert(i == 0 || reductions[i - 1] != BOUND_CHANGE_NO_ROW);
+        }
+
+        else if (type == LHS_CHANGE)
+        {
+            len = starts[i + 1] - start - 2;
+            assert(len > 1);
+            retrieve_lhs_change_primal_ray(sol, indices[start], indices[start + 1],
+                                           vals[start + 1]);
+        }
+        else if (type == RHS_CHANGE)
+        {
+            len = starts[i + 1] - start - 2;
+            assert(len > 1);
+            retrieve_rhs_change_primal_ray(sol, indices[start], indices[start + 1],
+                                           vals[start + 1]);
+        }
+        else if (type == EQ_TO_INEQ)
+        {
+            assert(starts[i + 1] - start == 1);
+        }
+        else
+        {
+            assert(type != BOUND_CHANGE_NO_ROW);
+            assert(false);
+        }
+    }
+
+#ifndef NDEBUG
+    for (int i = 0; i < sol->dim_x; ++i)
+    {
+        if (sol->z[i] == COL_NOT_RETRIEVED)
+        {
+            printf("col %d not fully retrieved \n", i);
+        }
+
         assert(sol->z[i] != COL_NOT_RETRIEVED);
     }
 
