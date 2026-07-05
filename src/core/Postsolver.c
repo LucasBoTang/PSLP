@@ -789,8 +789,7 @@ static void retrieve_parallel_col_dual_ray(Solution *sol, const int *indices,
     double ratio = vals[4];
     assert(sol->x[j] != COL_NOT_RETRIEVED && sol->x[k] == COL_NOT_RETRIEVED);
     double x_new_sol = sol->x[j];
-    double xj_val, xk_val;
-    double lower, upper;
+    double xk_val;
 
     if ((x_new_sol >= -FEAS_TOL && x_new_sol <= FEAS_TOL) ||
         (x_new_sol < -FEAS_TOL && IS_NEG_INF(lb_j)) ||
@@ -811,47 +810,7 @@ static void retrieve_parallel_col_dual_ray(Solution *sol, const int *indices,
         return;
     }
 
-    lb_j = IS_NEG_INF(lb_j) ? -INF : 0.0;
-    ub_j = IS_POS_INF(ub_j) ? INF : 0.0;
-    lb_k = IS_NEG_INF(lb_k) ? -INF : 0.0;
-    ub_k = IS_POS_INF(ub_k) ? INF : 0.0;
-
-    if (ratio > 0.0)
-    {
-        lower = MAX(lb_k, (x_new_sol - ub_j) / ratio);
-        upper = MIN(ub_k, (x_new_sol - lb_j) / ratio);
-    }
-    else
-    {
-        lower = MAX(lb_k, (x_new_sol - lb_j) / ratio);
-        upper = MIN(ub_k, (x_new_sol - ub_j) / ratio);
-    }
-
-    if (0.0 >= lower && 0.0 <= upper)
-    {
-        xk_val = 0.0;
-    }
-    else if (!IS_ABS_INF(lower))
-    {
-        xk_val = lower;
-    }
-    else
-    {
-        assert(!IS_ABS_INF(upper));
-        xk_val = upper;
-    }
-
-    xj_val = x_new_sol - ratio * xk_val;
-    assert((xj_val >= -FEAS_TOL && xj_val <= FEAS_TOL) ||
-           (xj_val < -FEAS_TOL && IS_NEG_INF(lb_j)) ||
-           (xj_val > FEAS_TOL && IS_POS_INF(ub_j)));
-    assert((xk_val >= -FEAS_TOL && xk_val <= FEAS_TOL) ||
-           (xk_val < -FEAS_TOL && IS_NEG_INF(lb_k)) ||
-           (xk_val > FEAS_TOL && IS_POS_INF(ub_k)));
-
-    assert(IS_EQUAL_FEAS_TOL(xj_val + ratio * xk_val, x_new_sol));
-    sol->x[j] = xj_val;
-    sol->x[k] = xk_val;
+    assert(false);
 }
 
 void postsolver_run(const PostsolveInfo *info, Solution *sol, const double *x,
