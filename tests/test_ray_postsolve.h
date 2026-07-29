@@ -834,6 +834,48 @@ static char *test_infeasible_lhs_change_primal_ray_postsolve()
     return 0;
 }
 
+static char *test_infeasible_both_sides_changed_primal_ray_postsolve()
+{
+    // row0 survives the parallel-row merge and BOTH of its sides are
+    // tightened from row1, which is then deleted. A reduced ray that uses
+    // the merged lhs must end up with its multiplier on row1.
+    double Ax[] = {1, 1, 1, 1, 1, 2};
+    int Ai[] = {0, 1, 0, 1, 0, 1};
+    int Ap[] = {0, 2, 4, 6};
+    int nnz = 6;
+    int n_rows = 3;
+    int n_cols = 2;
+
+    double lhs[] = {0.0, 3.5, -INF};
+    double rhs[] = {10.0, 5.0, 1.0};
+    double lbs[] = {0, 0};
+    double ubs[] = {INF, INF};
+    double c[] = {0, 0};
+
+    Settings *stgs = default_settings();
+    set_settings_true(stgs);
+    stgs->primal_propagation = false;
+    stgs->parallel_cols = false;
+    stgs->dual_fix = false;
+    Presolver *presolver =
+        new_presolver(Ax, Ai, Ap, n_rows, n_cols, nnz, lhs, rhs, lbs, ubs, c, stgs);
+
+    run_presolver(presolver);
+
+    // reduced primal infeasibility ray using the lhs of the merged row
+    double y[] = {-1.0, 1.0};
+    double y_orig[] = {0.0, 0.0, 0.0};
+    postsolve_primal_infeas_ray(presolver, y, y_orig);
+
+    mu_assert("both sides changed primal ray certificate",
+              is_primal_ray_valid_certificate(Ax, Ai, Ap, lhs, rhs, lbs, ubs, y_orig,
+                                              n_rows, n_cols));
+
+    PS_FREE(stgs);
+    free_presolver(presolver);
+    return 0;
+}
+
 static char *test_infeasible_bound_change_primal_ray_postsolve()
 {
     double Ax[] = {1, -2, 1, 1, 1};
@@ -1050,6 +1092,8 @@ static const char *all_tests_ray_postsolve()
     mu_run_test(test_infeasible_rhs_change_primal_ray_postsolve,
                 counter_ray_postsolve);
     mu_run_test(test_infeasible_lhs_change_primal_ray_postsolve,
+                counter_ray_postsolve);
+    mu_run_test(test_infeasible_both_sides_changed_primal_ray_postsolve,
                 counter_ray_postsolve);
     mu_run_test(test_infeasible_bound_change_primal_ray_postsolve,
                 counter_ray_postsolve);

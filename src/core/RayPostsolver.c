@@ -166,33 +166,43 @@ static void retrieve_bound_change_primal_ray(Solution *sol, int i, int j,
     sol->z[j] = 0.0;
 }
 
+// If both sides of row i were tightened from the same deleted row j, the pair
+// (i, j) has two reductions and row j may already carry the multiplier that the
+// other one transferred. We must therefore leave y[j] alone when the ray does
+// not use this side.
 static void retrieve_lhs_change_primal_ray(Solution *sol, int i, int j, double ratio)
 {
     assert(sol->y[i] != ROW_NOT_RETRIEVED);
-    assert(sol->y[j] == ROW_NOT_RETRIEVED || sol->y[j] == 0.0);
+
+    if (sol->y[j] == ROW_NOT_RETRIEVED)
+    {
+        sol->y[j] = 0.0;
+    }
 
     if (sol->y[i] >= 0.0)
     {
-        sol->y[j] = 0.0;
         return;
     }
 
-    sol->y[j] = ratio * sol->y[i];
+    sol->y[j] += ratio * sol->y[i];
     sol->y[i] = 0.0;
 }
 
 static void retrieve_rhs_change_primal_ray(Solution *sol, int i, int j, double ratio)
 {
     assert(sol->y[i] != ROW_NOT_RETRIEVED);
-    assert(sol->y[j] == ROW_NOT_RETRIEVED || sol->y[j] == 0.0);
+
+    if (sol->y[j] == ROW_NOT_RETRIEVED)
+    {
+        sol->y[j] = 0.0;
+    }
 
     if (sol->y[i] <= 0.0)
     {
-        sol->y[j] = 0.0;
         return;
     }
 
-    sol->y[j] = ratio * sol->y[i];
+    sol->y[j] += ratio * sol->y[i];
     sol->y[i] = 0.0;
 }
 
