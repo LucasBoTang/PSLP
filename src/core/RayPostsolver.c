@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-#include "Postsolver.h"
 #include "Bounds.h"
 #include "Constraints.h"
 #include "Matrix.h"
 #include "Numerics.h"
+#include "Postsolver.h"
 #include "State.h"
 #include "dVec.h"
 #include "debug_macros.h"

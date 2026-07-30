@@ -98,12 +98,9 @@ void retrieve_added_rows(Solution *sol, int i, const int *rows, const double *va
                          int len, double aik);
 
 /* Saves the information required to retrieve variable xk that was fixed
-   to val.
- * To recover the dual variable we need zk = ck - ak^T y
-   * info->vals stores [val,
- * ck, ak[0], ak[1], .., dots, ak[len - 1]
-   * info->indices stores [col, dummy,
- * rows[0], rows[1], ... rows[len - 1]].
+   to val. To recover the dual variable we need zk = ck - ak^T y
+   * info->vals stores    [val, ck, ak[0], ak[1], .., dots, ak[len - 1]
+   * info->indices stores [col, dummy, rows[0], rows[1], ... rows[len - 1]].
 */
 void save_retrieval_fixed_col(PostsolveInfo *info, int col, double val, double ck,
                               const double *vals, const int *rows, size_t len);
